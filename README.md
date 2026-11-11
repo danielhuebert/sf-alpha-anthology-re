@@ -12,7 +12,10 @@ Short answer: **no, and the reason is interesting.** The games on the disc do **
 appear to run as interpreted CPS-2 (Motorola 68000) programs at all. They run as
 **native PlayStation-2 MIPS code**, reusing the original games' *data* (graphics,
 tables, text) but not their *code*. There is no resident 68000 program image to
-extract. This write-up documents the file formats, the per-game modules, how to
+extract. (This was verified at runtime for **two** games spanning two engine
+generations — Street Fighter Alpha 2 and Hyper Street Fighter Alpha — and inferred for
+the rest from their identical module structure and shared runtime; see *Scope of
+verification* below.) This write-up documents the file formats, the per-game modules, how to
 identify them, why the payloads can't be disassembled statically, and the dynamic
 (PCSX2 RAM-dump) analysis that settled the emulation-vs-port question.
 
@@ -38,7 +41,8 @@ to produce them. You need your own legally obtained disc image to reproduce anyt
   and "ALPHA 3") is the best candidate for **Hyper Street Fighter Alpha**. See the
   confidence notes below — this is a *metadata* identification, not a code-level proof.
 - The compressed modules can't be disassembled statically. We dumped PCSX2's **32 MB
-  EE RAM** while Hyper SF Alpha was running and searched it. Result: **on the order of
+  EE RAM** while Hyper SF Alpha (and, separately, Street Fighter Alpha 2) was running and
+  searched it. Result in both: **on the order of
   1 MB of coherent MIPS code, zero disassemblable 68000 code** in any byte order, and **no
   resident 68000 program ROM** (plaintext or encrypted). Only the CPS-2 *data* (e.g. the
   `"SZ3J ZERO 3"` / `"SZ3U ALPHA 3"` region table) is present, as plain MIPS-accessible
@@ -213,7 +217,8 @@ Savestate contents: `eeMemory.bin` (33,554,432 = 32 MiB EE RAM), `iopMemory.bin`
   low-entropy, MIPS-accessible data structures — reused assets.
 - **No 68000 program.** We scanned all 32 MB for a 68000 vector table (big-endian,
   16-bit word-swap, and 32-bit byte-swap) and for 68000 control-flow density:
-  **nothing** — at most 2–5 "flow" instructions per KB, i.e. noise.
+  **nothing** — at most ~1 "flow" instruction per KB, i.e. noise. Same result in the
+  Hyper SF Alpha dump and the Street Fighter Alpha 2 dump.
 - **On the order of 1 MB of coherent MIPS code** across hundreds of regions (the exact
   figure depends on the detection threshold in `scan_cpu.py`), with real calls, stack
   frames and branches (thousands of them). This is the native engine actually executing.
@@ -235,6 +240,20 @@ We can't tell *hand-port* from *static recompilation* from the running image alo
 the development technique is not officially documented. But either way there is no
 resident 68000 program, so the "dump the CPS-2 ROM from emulated memory" plan does not
 apply to this disc.
+
+### Scope of verification
+
+- **Runtime-verified (RAM dump + `scan_cpu.py`): two games** — Street Fighter Alpha 2
+  (Alpha-2 engine) and Hyper Street Fighter Alpha (Alpha-3 engine). Both: ~1 MB MIPS,
+  zero 68000, no resident 68000 program. Two different engine generations, same result.
+- **Payload-compression verified: two modules** — `ro1_usa.bin` (SFA1) and
+  `ro9_usa.bin` (Hyper) — both compressed (0 long-runs vs 26 in a real CPS-2 program).
+- **The remaining games are inferred**, not individually runtime-tested: all nine
+  modules share the identical `MW` + MIPS-wrapper + compressed-payload structure and run
+  on the same shell (`b_usa.bin`) and EE runtime (`SLUS_213.17`). Mixing native
+  execution for some and 68000 emulation for others inside one unified runtime would be
+  unusual, but we did not prove it for every title. To extend coverage, make a PCSX2
+  save state in another game and run `scan_cpu.py` on its `eeMemory.bin`.
 
 ---
 
