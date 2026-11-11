@@ -12,10 +12,10 @@ Short answer: **no, and the reason is interesting.** The games on the disc do **
 appear to run as interpreted CPS-2 (Motorola 68000) programs at all. They run as
 **native PlayStation-2 MIPS code**, reusing the original games' *data* (graphics,
 tables, text) but not their *code*. There is no resident 68000 program image to
-extract. (This was verified at runtime for **two** games spanning two engine
-generations — Street Fighter Alpha 2 and Hyper Street Fighter Alpha — and inferred for
-the rest from their identical module structure and shared runtime; see *Scope of
-verification* below.) This write-up documents the file formats, the per-game modules, how to
+extract. (This was verified at runtime for **three** games from three different
+families — Street Fighter Alpha 2, Super Gem Fighter / Pocket Fighter, and Hyper Street
+Fighter Alpha — and inferred for the rest from their identical module structure and
+shared runtime; see *Scope of verification* below.) This write-up documents the file formats, the per-game modules, how to
 identify them, why the payloads can't be disassembled statically, and the dynamic
 (PCSX2 RAM-dump) analysis that settled the emulation-vs-port question.
 
@@ -41,8 +41,8 @@ to produce them. You need your own legally obtained disc image to reproduce anyt
   and "ALPHA 3") is the best candidate for **Hyper Street Fighter Alpha**. See the
   confidence notes below — this is a *metadata* identification, not a code-level proof.
 - The compressed modules can't be disassembled statically. We dumped PCSX2's **32 MB
-  EE RAM** while Hyper SF Alpha (and, separately, Street Fighter Alpha 2) was running and
-  searched it. Result in both: **on the order of
+  EE RAM** while three different games were running (Hyper SF Alpha, Street Fighter
+  Alpha 2, and Pocket Fighter) and searched it. Result in all three: **on the order of
   1 MB of coherent MIPS code, zero disassemblable 68000 code** in any byte order, and **no
   resident 68000 program ROM** (plaintext or encrypted). Only the CPS-2 *data* (e.g. the
   `"SZ3J ZERO 3"` / `"SZ3U ALPHA 3"` region table) is present, as plain MIPS-accessible
@@ -218,7 +218,11 @@ Savestate contents: `eeMemory.bin` (33,554,432 = 32 MiB EE RAM), `iopMemory.bin`
 - **No 68000 program.** We scanned all 32 MB for a 68000 vector table (big-endian,
   16-bit word-swap, and 32-bit byte-swap) and for 68000 control-flow density:
   **nothing** — at most ~1 "flow" instruction per KB, i.e. noise. Same result in the
-  Hyper SF Alpha dump and the Street Fighter Alpha 2 dump.
+  Hyper SF Alpha, Street Fighter Alpha 2 and Pocket Fighter dumps.
+- **Shared native runtime.** The MIPS code regions sit at the **same addresses** in all
+  three dumps (e.g. `0x127000`, `0x6400`, `0x140C00`, `0x108800`) — i.e. every game runs
+  on one common native runtime loaded at fixed addresses, which is what you'd expect from
+  a unified native framework, not from per-game 68000 emulation.
 - **On the order of 1 MB of coherent MIPS code** across hundreds of regions (the exact
   figure depends on the detection threshold in `scan_cpu.py`), with real calls, stack
   frames and branches (thousands of them). This is the native engine actually executing.
@@ -243,9 +247,10 @@ apply to this disc.
 
 ### Scope of verification
 
-- **Runtime-verified (RAM dump + `scan_cpu.py`): two games** — Street Fighter Alpha 2
-  (Alpha-2 engine) and Hyper Street Fighter Alpha (Alpha-3 engine). Both: ~1 MB MIPS,
-  zero 68000, no resident 68000 program. Two different engine generations, same result.
+- **Runtime-verified (RAM dump + `scan_cpu.py`): three games** — Street Fighter Alpha 2
+  (Alpha-2 engine), Super Gem Fighter / Pocket Fighter (a non-Alpha title) and Hyper
+  Street Fighter Alpha (Alpha-3 engine). All three: ~1 MB MIPS, zero 68000, no resident
+  68000 program, and the MIPS code at identical addresses (shared runtime).
 - **Payload-compression verified: two modules** — `ro1_usa.bin` (SFA1) and
   `ro9_usa.bin` (Hyper) — both compressed (0 long-runs vs 26 in a real CPS-2 program).
 - **The remaining games are inferred**, not individually runtime-tested: all nine
