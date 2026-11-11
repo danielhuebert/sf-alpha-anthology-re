@@ -1,0 +1,27 @@
+# No game data in this repo — ever.
+*.bin
+*.BIN
+*.iso
+*.ISO
+*.p2s
+*.cbs
+*.max
+*.psv
+*.psu
+*.sps
+*.xps
+*.IRX
+*.IMG
+*.BIZ
+*.zst
+X_DATA*
+Y_DATA*
+eeMemory*
+SLUS*
+ssf*
+sfx*
+hs2*
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
